@@ -22,3 +22,18 @@ git clone https://github.com/zapolskas/ansible-redis.git
 cd ansible-redis
 ansible-playbook -i production site.yml
 ```
+
+## Testing
+
+```sh
+curl http://172.17.33.220/lfjlkdf
+:1
+curl http://172.17.33.220/lfjlkdf
+:2
+curl http://172.17.33.220/ssd
+:1
+curl http://172.17.33.222/
+:1
+curl http://172.17.33.222/
+:2
+```
