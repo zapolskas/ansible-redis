@@ -1,0 +1,14 @@
+---
+- name: Restart ufw
+  service:
+    name: ufw
+    state: restarted
+    enabled: yes
+  become: true
+
+- name: Nginx Restart
+  service:
+    name: nginx
+    state: restarted
+    enabled: yes
+  become: true

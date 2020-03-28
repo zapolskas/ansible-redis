@@ -1,0 +1,135 @@
+---
+- name: install epel
+  when: ansible_distribution == 'CentOS'
+  yum:
+    name: "{{ packages }}"
+    state: installed
+  vars:
+    packages:
+    - epel-release
+
+- name: Installing NGINX Dependencies
+  yum:
+    name: "{{ packages }}"
+    update_cache: yes
+  vars:
+    packages:
+    - unzip
+    - ufw
+
+- name: Install build tools
+  yum:
+    name: "@Development tools"
+    state: latest
+  become: yes
+  when: ansible_distribution == 'CentOS'
+
+- name: Install build tools
+  apt:
+    name: build-essential
+    state: present
+  become: yes
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Downloading pcre source
+  get_url:
+    url: "{{ pcre_url }}"
+    dest: "{{ pcre_url_save }}"
+  register: pcre_tar
+
+- name: Unpacking pcre
+  unarchive:
+    copy: no
+    dest: /tmp/
+    src: "{{ pcre_tar.dest }}"
+  register: pcre_unpack
+  when: pcre_tar.changed
+
+- name: Downloading zlib source
+  get_url:
+    url: "{{ zlib_url }}"
+    dest: "{{ zlib_url_save }}"
+  register: zlib_tar
+
+- name: Unpacking zlib
+  unarchive:
+    copy: no
+    dest: /tmp
+    src: "{{ zlib_tar.dest }}"
+  when: zlib_tar.changed
+
+- name: Downloading NGINX sources
+  get_url:
+    url: "{{ nginx_tarball_url }}"
+    dest: "/tmp/{{ nginx_version }}.tar.gz"
+  register: nginx_source
+
+- name: Downloading redi2 module sources
+  get_url:
+    url: "{{ redis2_nginx_module_url }}"
+    dest: "/tmp/{{ redis_module_version }}.tar.gz"
+  register: redis2_module_source
+
+- name: Unpacking NGINX
+  unarchive:
+    copy: no
+    dest: /tmp/
+    src: "{{ nginx_source.dest }}"
+  when: nginx_source.changed
+  register: nginx_source_unpack
+
+- name: Unarchive REDIS_module
+  unarchive:
+    copy: no
+    dest: /tmp/
+    src: "{{ redis2_module_source.dest }}"
+  when: redis2_module_source.changed
+
+- name: Create required Nginx dirs
+  become: yes
+  file:
+    path: /etc/nginx
+    state: directory
+    owner: root
+    mode: 0755
+
+- name: Configuring NGINX source with custom modules
+  command: "./configure --sbin-path={{ nginx_sbin_path }} --conf-path={{ nginx_conf_path }} {{ nginx_custom_modules }}"
+  args:
+    chdir: "{{ nginx_install_dir }}"
+  when: nginx_source_unpack is changed
+  register: nginx_configure
+
+- name: Installing NGINX
+  become: yes
+  shell: make && make install
+  args:
+    chdir: "{{ nginx_install_dir }}"
+  when: nginx_configure is changed
+
+- name: Creating NGINX conf file
+  become: yes
+  template:
+    src: "{{ nginx_conf_file }}"
+    dest: "{{ nginx_conf_path }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+
+- name: Installing NGINX init script (service)
+  become: yes
+  template:
+    src: "{{ nginx_init_file }}"
+    dest: /lib/systemd/system/nginx.service
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Starting services
+  become: yes
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+      - nginx
+      - ufw

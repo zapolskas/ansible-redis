@@ -1,0 +1,29 @@
+---
+- name: Allow http traffic
+  ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+  notify: Restart ufw
+
+- name: Ensure Redis is present
+  yum:
+    name: redis
+    state: present
+  become: yes
+
+- name: Ensure Redis is started
+  service:
+    name: redis
+    state: started
+  become: yes
+
+- name: Redis configuration
+  template:
+    src: roles/redis/files/redis.conf
+    dest: /etc/redis.conf
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  notify: Redis Restart

@@ -1,0 +1,16 @@
+---
+ansible_user: ansible
+pcre_version: pcre-8.44
+zlib_version: zlib-1.2.11
+openssl_version: openssl-1.1.1d
+nginx_version: nginx-1.17.4
+redis_port: 6379
+redis_databases: 1
+redis_module_version: v0.15
+redis_module: redis2-nginx-module-0.15
+nginx_tarball_url: "http://nginx.org/download/{{ nginx_version }}.tar.gz"
+nginx_install_dir: "/tmp/{{ nginx_version }}"
+nginx_sbin_path: "/usr/sbin/nginx"
+nginx_conf_path: "/etc/nginx/nginx.conf"
+nginx_custom_modules: "--with-pcre=/tmp/pcre-8.44 --with-zlib=/tmp/zlib-1.2.11 --with-stream --with-mail=dynamic --add-module=/tmp/{{ redis_module }}"
+redis2_nginx_module_url: "https://github.com/openresty/redis2-nginx-module/archive/v0.15.tar.gz"
